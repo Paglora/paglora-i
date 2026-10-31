@@ -7,3 +7,5 @@ we yet need to disclose what will be better, because i dont want paglora to look
 
 tauri 2 has nsis, but Nullsoft Scriptable Install System (NSIS) ecosystem, Modern User Interface 2 (MUI2) released as a stable framework in December 2007 (NSIS v2.34), so its 20 years ago.
 we can make own installer but question is how it all connects together.
+
+language/stack up to you, but we need to make sure it will work with paglora whole bundling/publishing and auto updating
