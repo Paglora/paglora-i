@@ -23,32 +23,7 @@ type Manifest struct {
 	Size     int64  `json:"size"`
 }
 
-var versionPattern = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+package installer
-
-import (
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
-	"io/fs"
-	"os"
-	"path"
-	"regexp"
-	"strings"
-)
-
-var ErrNotPackaged = errors.New("No verified Paglora package is embedded. Build with scripts/package.ps1.")
-
-type Manifest struct {
-	Version  string `json:"version"`
-	FileName string `json:"fileName"`
-	SHA256   string `json:"sha256"`
-	Size     int64  `json:"size"`
-}
-
-var versionPattern = )
+var versionPattern = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
 
 // Validate rejects payload path traversal, release/version mismatches and unpinned bytes.
 // This SHA-256 check is an integrity check; it does not replace Authenticode
