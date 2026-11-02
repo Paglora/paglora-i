@@ -23,7 +23,32 @@ type Manifest struct {
 	Size     int64  `json:"size"`
 }
 
-var versionPattern = regexp.MustCompile(`^[0-9]+.[0-9]+.[0-9]+$`)
+var versionPattern = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+package installer
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"io/fs"
+	"os"
+	"path"
+	"regexp"
+	"strings"
+)
+
+var ErrNotPackaged = errors.New("No verified Paglora package is embedded. Build with scripts/package.ps1.")
+
+type Manifest struct {
+	Version  string `json:"version"`
+	FileName string `json:"fileName"`
+	SHA256   string `json:"sha256"`
+	Size     int64  `json:"size"`
+}
+
+var versionPattern = )
 
 // Validate rejects payload path traversal, release/version mismatches and unpinned bytes.
 // This SHA-256 check is an integrity check; it does not replace Authenticode
@@ -37,7 +62,7 @@ func (m Manifest) Validate() error {
 	}
 	expected := "Paglora_" + m.Version + "_x64-setup.exe"
 	if m.FileName != expected || path.Base(m.FileName) != m.FileName ||
-		strings.ContainsAny(m.FileName, "/\") {
+		strings.ContainsRune(m.FileName, 92) {
 		return errors.New("Embedded package name or version does not match Paglora NSIS")
 	}
 	raw, err := hex.DecodeString(m.SHA256)
