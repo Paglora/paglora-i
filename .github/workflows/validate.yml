@@ -1,0 +1,56 @@
+name: Validate Paglora installer
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+      - run: bun install
+        working-directory: frontend
+      - run: bun run check
+        working-directory: frontend
+      - run: bun run build
+        working-directory: frontend
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Verify payload manifest, integrity and safe filenames
+        run: go test ./internal/installer/...
+  windows-prototype:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - run: bun install
+        working-directory: frontend
+      - run: bun run check
+        working-directory: frontend
+      - run: bun run build
+        working-directory: frontend
+      - run: go test ./internal/installer/...
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.11.0
+      - name: Build preview bootstrapper (no Paglora payload)
+        run: wails build -clean
+      - name: Upload development UI (installation intentionally disabled)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Paglora-Installer-Preview-Windows
+          path: build/bin/Paglora-Installer.exe
+          if-no-files-found: error
+          retention-days: 7
