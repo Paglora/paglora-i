@@ -2,7 +2,13 @@
 
 Standalone Windows installer shell for [Paglora Studio](https://github.com/m1nsook/paglora).
 
-**Status: private development prototype — not a stable release.**
+**Status: public-source, proprietary development prototype — not open source and not a stable release.**
+
+## License and access
+
+The repository is publicly readable so people can inspect the installer and report problems, but **the original Paglora Installer code is proprietary**. Copyright (c) 2026 m1nsook. All rights reserved; see [LICENSE](LICENSE). No permission to reuse, modify, or redistribute this project's original code is granted merely by publishing it.
+
+Third-party components (including Go, Wails, Svelte, Tauri, and NSIS) retain their own separate licenses. Please report issues here; do not assume third-party open-source licensing applies to Paglora Installer itself.
 
 ## Architecture
 
