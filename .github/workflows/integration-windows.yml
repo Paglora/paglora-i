@@ -1,0 +1,102 @@
+name: Real Windows NSIS integration (development only)
+
+on:
+  pull_request:
+    paths:
+      - "scripts/package.ps1"
+      - "scripts/test-windows-install.ps1"
+      - "integration_install_windows_test.go"
+      - ".github/workflows/integration-windows.yml"
+      - "app.go"
+      - "run_windows.go"
+      - "internal/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: real-windows-nsis
+  cancel-in-progress: true
+
+jobs:
+  real-installer:
+    name: Tauri NSIS -> Wails wrapper -> install -> uninstall
+    runs-on: windows-latest
+    timeout-minutes: 65
+    steps:
+      - name: Checkout Paglora installer
+        uses: actions/checkout@v4
+      - name: Checkout actual Paglora Desktop source
+        uses: actions/checkout@v4
+        with:
+          repository: m1nsook/paglora
+          ref: main
+          path: .paglora-source
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: .paglora-source/apps/desktop/src-tauri
+      - name: Install actual Paglora build dependencies
+        working-directory: .paglora-source
+        run: bun install --frozen-lockfile
+      - name: Build the actual Paglora website runtime
+        working-directory: .paglora-source
+        run: bun packages/site-runtime/build.mjs
+      - name: Check source updater configuration has not been disabled
+        shell: pwsh
+        run: |
+          $tauri = Get-Content '.paglora-source/apps/desktop/src-tauri/tauri.conf.json' -Raw | ConvertFrom-Json
+          if ($tauri.bundle.createUpdaterArtifacts -ne $true -or @($tauri.bundle.targets) -notcontains 'nsis') {
+            throw 'Do not run integration against Paglora without NSIS / updater enabled in the SOURCE config.'
+          }
+      - name: Build a development-only Tauri NSIS package
+        # Override updater signing only for an ephemeral build; the source
+        # config, release workflow and production signatures remain unchanged.
+        # Never upload or publish this unsigned installer.
+        shell: pwsh
+        working-directory: .paglora-source/apps/desktop
+        run: |
+          bun tauri build --bundles nsis --ci --config '{"bundle":{"createUpdaterArtifacts":false}}'
+          if ($LASTEXITCODE -ne 0) { throw 'Real Tauri NSIS build failed' }
+      - name: Install Wails compiler
+        shell: pwsh
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@v2.11.0
+          if ($LASTEXITCODE -ne 0) { throw 'Wails CLI installation failed' }
+          $goBin = Join-Path (go env GOPATH) 'bin'
+          $goBin | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+      - name: Embed the exact Tauri NSIS package in Paglora Installer
+        shell: pwsh
+        run: |
+          ./scripts/package.ps1 -PagloraRepository "$env:GITHUB_WORKSPACE/.paglora-source" -AllowUnsignedDevelopment
+          if ($LASTEXITCODE -ne 0) { throw 'Branded installer packaging failed' }
+      - name: Real NSIS install through Go bootstrapper
+        shell: pwsh
+        env:
+          PAGLORA_EPHEMERAL_WINDOWS_CI: "yes"
+        run: |
+          go test -tags integration -run '^TestRealWindowsNSISInstall$' -count=1 -v -timeout 7m .
+          if ($LASTEXITCODE -ne 0) { throw 'Go bootstrapper could not install Paglora' }
+      - name: Verify installed app and invoke real Windows uninstaller
+        shell: pwsh
+        env:
+          PAGLORA_EPHEMERAL_WINDOWS_CI: "yes"
+        run: |
+          $tauri = Get-Content '.paglora-source/apps/desktop/src-tauri/tauri.conf.json' -Raw | ConvertFrom-Json
+          ./scripts/test-windows-install.ps1 -Version $tauri.version
+      - name: Record successful integration without publishing unsigned binaries
+        shell: pwsh
+        run: |
+          '## Paglora installer integration' >> $env:GITHUB_STEP_SUMMARY
+          '- Built actual Paglora Tauri NSIS from main' >> $env:GITHUB_STEP_SUMMARY
+          '- Bundled setup in Wails executable with SHA-256 verification' >> $env:GITHUB_STEP_SUMMARY
+          '- Installed and uninstalled on ephemeral Windows runner' >> $env:GITHUB_STEP_SUMMARY
+          '- No unsigned installer published; production signing/updating require separate acceptance' >> $env:GITHUB_STEP_SUMMARY
