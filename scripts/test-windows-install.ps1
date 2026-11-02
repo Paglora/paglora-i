@@ -15,7 +15,10 @@ $uninstallRoot = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall'
 function Get-PagloraEntry {
   @(Get-ChildItem -LiteralPath $uninstallRoot -ErrorAction SilentlyContinue | ForEach-Object {
     Get-ItemProperty -LiteralPath $_.PSPath
-  } | Where-Object { $_.DisplayName -eq 'Paglora' })
+  } | Where-Object {
+    $display = $_.PSObject.Properties['DisplayName']
+    $null -ne $display -and $display.Value -eq 'Paglora'
+  })
 }
 $entries = @(Get-PagloraEntry)
 if ($entries.Count -ne 1) {
