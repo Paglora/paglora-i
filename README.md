@@ -67,3 +67,16 @@ Packaging checks the Paglora version and NSIS configuration, embeds the existing
 - [ ] Code-sign the branded Wails executable. No public release until the entire chain is verified.
 
 No stable release is published automatically from this repository.
+
+## Real Windows integration tests
+
+The separate **Real Windows NSIS integration (development only)** GitHub Actions workflow tests a real, source-built Tauri NSIS executable on a disposable Windows runner. It:
+
+1. Checks out the actual Paglora Desktop source, builds the Rust NSIS package and preserves the production updater configuration. It uses a *CI-only* override to skip generating signed updater artifacts; this is never applied to the Paglora repository.
+2. Runs the packaging PowerShell script, embedding that precise setup executable into the branded Wails launcher. The bundle checksum and version are verified.
+3. Uses an opt-in Go integration test to invoke the actual Tauri NSIS silently, checks Windows' current-user uninstall registration and Paglora application executable, then invokes the official NSIS uninstaller.
+4. Keeps all temporary unsigned binaries inside the runner. It does **not** publish them or use production signing secrets.
+
+Integration is triggered on changes to the installer handoff and can also be run using **Actions → Real Windows NSIS integration → Run workflow**. The normal validation workflow remains quick.
+
+**Passing this test does not prove updater compatibility or Authenticode trust.** Production release still requires signed updater artifacts, Windows code signing, and a real old-to-new updater test. Never use the CI-only unsigned build as a public download.
