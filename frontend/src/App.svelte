@@ -2,15 +2,7 @@
   import { onMount } from "svelte";
 
   type Phase = "preview" | "ready" | "installing" | "complete" | "error";
-  interface InstallStatus { phase: Phase; version: string; message: string }
-  declare global {
-    interface Window {
-      go?: { main?: { App?: {
-        GetStatus: () => Promise<InstallStatus>;
-        BeginInstall: () => Promise<boolean>;
-      } } };
-    }
-  }
+  import type { InstallStatus } from "./wails";
   let status = $state<InstallStatus>({
     phase: "preview", version: "", message: "Waiting for the Windows installer service.",
   });
