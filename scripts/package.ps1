@@ -18,9 +18,15 @@ if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Invalid Paglora version: $ver
 if (!$config.bundle.createUpdaterArtifacts -or @($config.bundle.targets) -notcontains 'nsis') {
   throw 'Paglora must retain Tauri NSIS and createUpdaterArtifacts: true'
 }
-if ($null -ne $config.bundle.windows -and $null -ne $config.bundle.windows.nsis -and
-    $config.bundle.windows.nsis.installMode -and $config.bundle.windows.nsis.installMode -ne 'currentUser') {
-  throw 'The Wails wrapper supports only Tauri currentUser NSIS installation.'
+$windowsOption = $config.bundle.PSObject.Properties['windows']
+if ($null -ne $windowsOption) {
+  $nsisOption = $windowsOption.Value.PSObject.Properties['nsis']
+  if ($null -ne $nsisOption) {
+    $modeOption = $nsisOption.Value.PSObject.Properties['installMode']
+    if ($null -ne $modeOption -and $modeOption.Value -ne 'currentUser') {
+      throw 'The Wails wrapper supports only Tauri currentUser NSIS installation.'
+    }
+  }
 }
 $filename = ('Paglora_' + $version + '_x64-setup.exe')
 $nsisDir = Join-Path $repo 'apps\desktop\src-tauri\target\release\bundle\nsis'
